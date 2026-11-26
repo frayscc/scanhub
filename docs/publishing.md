@@ -6,6 +6,8 @@
 - 推送 vX.Y.Z：执行验证，成功后发布 X.Y.Z、X.Y 和 SHA 标签。
 - Pull request 只验证，不登录 Docker Hub，不访问发布令牌。
 
+首次发布已于 2026-11-26 完成：[GitHub Actions 运行记录](https://github.com/frayscc/scanhub/actions/runs/45745918012)。Docker 构建、独立容器验收、容器重启和 Docker Hub 推送均通过；镜像仓库公开且已校验匿名镜像清单访问。仍需在实际 J1900 和扫描仪上验收。
+
 ## 一次性凭据配置
 
 在 Docker Hub 为 frayscc 创建具有此镜像推送权限的访问令牌。在 GitHub 仓库 Settings → Secrets and variables → Actions → New repository secret 中添加：

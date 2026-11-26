@@ -58,7 +58,7 @@
 - [x] 发布 workflow：验证通过后由 GitHub runner 推送 frayscc/scanhub；PR 不使用发布凭据。
 - [x] Docker Hub 凭据仅配置在 Actions secret DOCKERHUB_TOKEN 中。
 - [x] 提供直接拉取镜像的 docker-compose.image.yml 和发布文档。
-- [ ] 首次镜像推送及匿名拉取校验，执行后更新。
+- [x] 首次 GitHub runner 发布成功；Docker Hub 为公开仓库，已匿名读取并校验 latest 镜像清单与 linux/amd64 配置，来源提交 cfd774f。
 
 ## Phase 3：可选业务扩展，尚未开发
 
