@@ -10,7 +10,7 @@
 - [x] schema v4迁移，旧原件保留且不公开，恢复撤销临时工作台。
 - [x] 单容器Compose，保留用户npm网络、1核/256MiB及普通用户。
 - [x] 本地32项后端、6项桌面/手机视口浏览器测试及前端构建通过。
-- [ ] 0.4.0 GitHub runner容器FTP验收/短时重启连续性及Docker Hub发布。
+- [x] 0.4.0 GitHub runner容器FTP验收/短时重启连续性及Docker Hub发布通过：[运行45780151653](https://github.com/frayscc/scanhub/actions/runs/45780151653)，应用提交01bf12d。
 - [ ] 目标J1900和真实扫描仪复核新FTP、清理及资源占用。
 
 ## 既往阶段
