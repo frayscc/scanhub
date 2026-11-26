@@ -88,6 +88,23 @@ curl -H "X-Upload-Token: $UPLOAD_TOKEN" \
 
 ## 真实扫描仪协议验证
 
+### 最简无鉴权测试
+
+设备持续报错时，可使用独立 `docker-compose.minimal.yml`：不使用密码、Token、数据库或类型校验，默认回复 HTTP 200 / 纯文本 OK，不加载正式 ScanHub，也不挂载正式 data/.env。
+
+```bash
+mkdir -p scanner-test
+sudo chown 10001:10001 scanner-test
+docker compose -f docker-compose.minimal.yml up -d --pull always
+docker logs -f scanhub-scanner-test
+```
+
+扫描仪地址：`http://服务器IP:8687/api/upload`；删除自定义参数，保留设备自带 paper/text，用一张 JPG 测试纸测试。浏览器访问 `http://服务器IP:8687/` 应显示 minimal-no-auth。
+
+日志显示方法、Content-Type、字节数、文件字段名及普通字段名。请求和文件在 `scanner-test/received/<请求ID>/`；无法解析的请求也保留 body.bin 并回复 200。只扫描无个人信息测试纸，测试结束执行 `docker compose -f docker-compose.minimal.yml down`。
+
+如服务器已收到文件但设备仍报错，可修改测试 Compose 的 MINIMAL_RESPONSE_BODY / MINIMAL_RESPONSE_TYPE / MINIMAL_RESPONSE_STATUS，再重新创建容器，以验证响应要求。单次请求仍限制为 50 MiB，防止无界资源消耗。
+
 首次启用可设置 `DEBUG_ENABLED=true`，确保两个令牌非空且不同，然后 `docker compose up -d --force-recreate`。若已保存系统设置，应在网页设置中切换调试开关（数据库配置优先）；网页也提供脱敏协议记录查看。
 
 1. 地址先设为 `http://SERVER_IP:8686/api/debug/upload?token=YOUR_UPLOAD_TOKEN`；设备若支持表单自定义 `token`，优先改用表单并移除 URL 令牌。

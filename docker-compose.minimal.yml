@@ -1,0 +1,16 @@
+# Disposable protocol test only; no production data, password, token, DB or NPM proxy.
+services:
+  scanner-test:
+    image: frayscc/scanhub:latest
+    container_name: scanhub-scanner-test
+    command: ["python", "-m", "uvicorn", "scanhub.minimal:app", "--host", "0.0.0.0", "--port", "8080", "--no-access-log"]
+    ports:
+      - "8687:8080"
+    volumes:
+      - ./scanner-test:/data
+    environment:
+      TZ: Asia/Shanghai
+      MINIMAL_DIR: /data/received
+      MINIMAL_RESPONSE_BODY: OK
+      MINIMAL_RESPONSE_STATUS: '200'
+      MINIMAL_RESPONSE_TYPE: text/plain
