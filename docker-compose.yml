@@ -1,0 +1,19 @@
+services:
+  scanhub:
+    build: .
+    container_name: scanhub
+    restart: unless-stopped
+    ports:
+      - "8686:8080"
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    environment:
+      TZ: Asia/Shanghai
+    mem_limit: 256m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

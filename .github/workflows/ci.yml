@@ -1,0 +1,35 @@
+name: Validate ScanHub
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  test-and-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: docker build -t scanhub:ci .
+      - run: python scripts/acceptance.py prepare
+      - run: mkdir -p test-results/acceptance-data && sudo chown 10001:10001 test-results/acceptance-data
+      - run: docker compose -f docker-compose.acceptance.yml up -d --wait --wait-timeout 120
+      - run: python scripts/acceptance.py run --confirm-isolated
+      - run: docker compose -f docker-compose.acceptance.yml restart
+      - run: docker compose -f docker-compose.acceptance.yml up -d --wait --wait-timeout 120
+      - run: python scripts/acceptance.py verify --confirm-isolated
+      - if: always()
+        run: docker compose -f docker-compose.acceptance.yml down

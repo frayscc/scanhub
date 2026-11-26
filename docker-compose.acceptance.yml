@@ -1,0 +1,21 @@
+# Isolated acceptance target: no production data or .env is mounted.
+name: scanhub-acceptance
+services:
+  scanhub:
+    build: .
+    ports:
+      - "127.0.0.1:18686:8080"
+    env_file:
+      - ./test-results/acceptance.env
+    environment:
+      DATA_DIR: /data
+      TZ: Asia/Shanghai
+      SCANHUB_INSTANCE: acceptance
+    volumes:
+      - ./test-results/acceptance-data:/data
+    mem_limit: 256m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
