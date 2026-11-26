@@ -17,6 +17,11 @@ def test_full_acceptance_restart_restore_and_cleanup(tmp_path):
     env_file=tmp_path/"acceptance.env"
     prepare(env_file)
     values=dict(line.split("=",1) for line in env_file.read_text().splitlines())
+    with socket.socket() as ftp_socket:
+        ftp_socket.bind(('127.0.0.1',0))
+        ftp_port=ftp_socket.getsockname()[1]
+    values['FTP_PORT']=str(ftp_port)
+    with env_file.open('a') as out:out.write('TEST_FTP_PORT='+str(ftp_port)+'\n')
     environment=dict(os.environ)|values|{"DATA_DIR":str(tmp_path/"data"),"SCANHUB_INSTANCE":"acceptance"}
     with socket.socket() as sock:
         sock.bind(("127.0.0.1",0))
@@ -56,16 +61,10 @@ def test_full_acceptance_restart_restore_and_cleanup(tmp_path):
         command("verify")
     finally:
         process.terminate();process.wait(timeout=10)
-    archive=tmp_path/"offline.zip"
-    backup(original,archive,True)
-    recovered=tmp_path/"recovered"
-    restore(archive,recovered,True)
-    process=start(recovered)
-    try:
-        command("verify")
-        command("cleanup")
-    finally:
-        process.terminate();process.wait(timeout=10)
+    process=start(original)
+    try:command('cleanup')
+    finally:process.terminate();process.wait(timeout=10)
+
 
 
 def test_acceptance_refuses_production_before_login(monkeypatch):

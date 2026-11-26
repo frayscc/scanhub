@@ -29,6 +29,6 @@ Secret: Docker Hub 访问令牌
 docker compose -f docker-compose.image.yml up -d --pull always --wait --wait-timeout 120
 ```
 
-固定版本可设置 `SCANHUB_IMAGE_TAG=0.3.0`（须该版本标签已经成功发布）。生产升级前备份数据，避免不经检查直接跟随 latest。
+固定版本可将 Compose 的 image 改为已成功发布的版本或 SHA 标签。生产升级前备份数据，避免不经检查直接跟随 latest。
 
 当前公开源码尚未指定开源许可证；公开可见不等于授予任意再分发或商用授权，许可证可由项目所有者后续选择。

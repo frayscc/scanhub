@@ -16,6 +16,7 @@ pillow==13.0.0
 pydantic==2.14.4
 pydantic-core==2.50.5
 pypdf==7.1.1
+pyftpdlib==2.2.0
 python-multipart==0.0.34
 sqlalchemy==2.0.41
 starlette==1.10.0

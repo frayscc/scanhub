@@ -14,6 +14,7 @@ from PIL import Image
 import pytest
 
 from scanhub.app import Settings, create_app
+from tests.helpers import seed
 from scanhub.maintenance import backup, inspect_data, restore, MANIFEST
 from scanhub.security import hash_password
 from scanhub.work import BoundedWorker
@@ -22,15 +23,16 @@ from scanhub.work import BoundedWorker
 @pytest.fixture
 def release_data(tmp_path, monkeypatch):
     monkeypatch.setenv("ADMIN_PASSWORD_HASH", hash_password("release-test-password"))
-    cfg = Settings(tmp_path / "data", upload_token="release-scanner")
+    cfg = Settings(tmp_path / "data")
     app = create_app(cfg)
     client = TestClient(app)
-    csrf = client.post("/api/auth/login", json={"username":"admin", "password":"release-test-password"}).json()["csrf"]
+    data=client.post('/api/workspaces').json();client.workspace_id=data['id']
+    client.headers.update({'X-Workspace-Token':data['token']})
+    csrf=data['token']
     image = io.BytesIO()
     Image.new("RGB", (30, 20), "blue").save(image, "PNG")
-    response = client.post("/api/upload", headers={"X-CSRF-Token": csrf}, files={"paper":("scan.png", image.getvalue())})
-    file_id = response.json()["files"][0]["id"]
-    client.post("/api/files/batch", headers={"X-CSRF-Token":csrf}, json={"ids":[file_id],"action":"right"})
+    file_id = seed(client,[("scan.png",image.getvalue())])[0]
+    client.post("/api/files/batch", headers={"X-Workspace-Token":csrf}, json={"ids":[file_id],"action":"right"})
     yield cfg.data_dir, app.state.store, file_id, image.getvalue(), app, client
     app.state.store.engine.dispose()
 
@@ -149,18 +151,18 @@ def test_worker_does_not_block_loop_and_limits_parallelism():
 
 
 def test_liveness_responds_during_image_work(release_data,monkeypatch):
-    import scanhub.manager
+    import scanhub.workspace_api
     root,store,file_id,original,app,client=release_data
     entered,release=threading.Event(),threading.Event()
-    real=scanhub.manager.preview_bytes
+    real=scanhub.workspace_api.preview_bytes
     def slow(*args):
         entered.set()
         release.wait(3)
         return real(*args)
-    monkeypatch.setattr(scanhub.manager,"preview_bytes",slow)
+    monkeypatch.setattr(scanhub.workspace_api,"preview_bytes",slow)
     # Context manager keeps requests on the same ASGI event loop, matching production.
     with TestClient(app) as browser, ThreadPoolExecutor(max_workers=1) as pool:
-        browser.cookies.update(client.cookies)
+        browser.headers.update(client.headers)
         request=pool.submit(browser.get,f"/api/files/{file_id}/preview")
         assert entered.wait(3)
         try:

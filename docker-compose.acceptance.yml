@@ -5,12 +5,15 @@ services:
     build: .
     ports:
       - "127.0.0.1:18686:8080"
+      - "127.0.0.1:2121:2121"
+      - "127.0.0.1:21000-21010:21000-21010"
     env_file:
       - ./test-results/acceptance.env
     environment:
       DATA_DIR: /data
       TZ: Asia/Shanghai
       SCANHUB_INSTANCE: acceptance
+      FTP_PUBLIC_HOST: "127.0.0.1"
     volumes:
       - ./test-results/acceptance-data:/data
     mem_limit: 256m

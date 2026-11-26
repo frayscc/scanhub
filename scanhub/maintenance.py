@@ -13,7 +13,7 @@ import time
 import zipfile
 
 FORMAT = 1
-SCHEMA = 2
+SCHEMA = 4
 MANIFEST = "scanhub-backup.json"
 
 
@@ -57,7 +57,7 @@ def inspect_data(root, verify_hashes=False):
             if check != [("ok",)]:
                 issues.append("SQLite 一致性检查失败")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (1, SCHEMA):
+            if version not in (1, 2, 3, SCHEMA):
                 issues.append("不支持的数据库版本")
             for file_id, relative, size, sha in db.execute("SELECT id,path,size,sha256 FROM files"):
                 count += 1
@@ -149,7 +149,7 @@ def restore(archive_path, destination, offline_confirmed=False):
             if len(manifest_infos) != 1 or manifest_infos[0].file_size > 32 * 1024 * 1024:
                 raise ValueError("备份清单缺失、重复或过大")
             manifest = json.loads(archive.read(MANIFEST))
-            if manifest.get("format") != FORMAT or manifest.get("schema") not in (1, SCHEMA):
+            if manifest.get("format") != FORMAT or manifest.get("schema") not in (1, 2, 3, SCHEMA):
                 raise ValueError("不支持的备份格式或数据库版本")
             expected = {}
             for entry in manifest["files"]:
@@ -191,6 +191,9 @@ def restore(archive_path, destination, offline_confirmed=False):
         # Revoke copied browser sessions. Preserve upload token digest and user settings.
         with closing(sqlite3.connect(stage / "scanhub.db")) as db:
             db.execute("DELETE FROM sessions")
+            if report['schema']>=4:
+                db.execute("UPDATE workspaces SET state='ended', expires=0")
+                db.execute("UPDATE scanner_lease SET workspace_id=NULL")
             db.commit()
         # Destination is published only after every file and DB reference has been verified.
         stage.rename(destination)

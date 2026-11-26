@@ -1,19 +1,32 @@
 services:
   scanhub:
-    image: frayscc/scanhub:${SCANHUB_IMAGE_TAG:-latest}
+    image: frayscc/scanhub:latest
     container_name: scanhub
     restart: unless-stopped
     ports:
       - "8686:8080"
+      - "21:2121"
+      - "21000-21010:21000-21010"
     volumes:
       - ./data:/data
     env_file:
       - .env
     environment:
       TZ: Asia/Shanghai
+      FTP_USERNAME: scanner
+      FTP_PASSWORD: ${SCANNER_FTP_PASSWORD:?Set SCANNER_FTP_PASSWORD in .env}
+      FTP_PUBLIC_HOST: "10.0.0.49"
+      FTP_PASSIVE_MIN: "21000"
+      FTP_PASSIVE_MAX: "21010"
+    networks:
+      - npm
     mem_limit: 256m
     cpus: 1.0
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
+networks:
+  npm:
+    external: true
+    name: npm

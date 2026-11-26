@@ -18,6 +18,6 @@ RUN pip install --no-cache-dir /wheels/* && rm -r /wheels && useradd --uid 10001
 COPY scanhub ./scanhub
 COPY --from=frontend /ui/dist ./scanhub/static
 USER scanhub
-EXPOSE 8080
+EXPOSE 8080 2121 21000-21010
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/ready', timeout=4)"
 CMD ["uvicorn", "scanhub.app:app", "--host", "0.0.0.0", "--port", "8080", "--no-access-log", "--timeout-keep-alive", "5", "--limit-concurrency", "16"]

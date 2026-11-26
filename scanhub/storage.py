@@ -22,7 +22,7 @@ files = Table("files", metadata,
     Column("uploaded_at", Float, index=True), Column("device", String), Column("qr", Text),
     Column("extra", Text), Column("batch_id", String), Column("width", Integer),
     Column("height", Integer), Column("rotation", Integer, default=0),
-    Column("deleted_at", Float, nullable=True, index=True))
+    Column("deleted_at", Float, nullable=True, index=True),Column("workspace_id",String,nullable=True,index=True))
 sessions = Table("sessions", metadata, Column("digest", String, primary_key=True),
     Column("csrf", String), Column("expires", Float))
 state = Table("state", metadata, Column("id", Integer, primary_key=True), Column("revision", Integer))
@@ -32,8 +32,12 @@ batches = Table("batches", metadata, Column("id", String, primary_key=True),
 preferences = Table("preferences", metadata, Column("key", String, primary_key=True), Column("value", Text))
 upload_logs = Table("upload_logs", metadata, Column("id", String, primary_key=True),
     Column("received_at", Float, index=True), Column("status", Integer), Column("bytes", Integer),
-    Column("file_count", Integer), Column("device", String))
+    Column("file_count", Integer), Column("device", String),Column("workspace_id",String,nullable=True))
 purge_jobs = Table("purge_jobs", metadata, Column("id", String, primary_key=True), Column("paths", Text))
+receipts = Table("ingestion_receipts",metadata,Column("id",String,primary_key=True),Column("file_id",String))
+workspaces=Table("workspaces",metadata,Column("id",String,primary_key=True),Column("digest",String,unique=True),
+    Column("expires",Float,index=True),Column("state",String))
+lease=Table("scanner_lease",metadata,Column("id",Integer,primary_key=True),Column("workspace_id",String,nullable=True))
 
 
 def clean_name(name):
@@ -95,7 +99,7 @@ class Store:
         with self.engine.begin() as db:
             db.exec_driver_sql("BEGIN IMMEDIATE")
             version = db.execute(text("PRAGMA user_version")).scalar()
-            if version > 2:
+            if version > 4:
                 raise RuntimeError("数据库版本高于应用，请升级应用")
             if version == 0:
                 metadata.create_all(db)
@@ -104,6 +108,18 @@ class Store:
             if version < 2:
                 metadata.create_all(db)
                 db.execute(text("PRAGMA user_version=2"))
+            if version < 3:
+                metadata.create_all(db)
+                db.execute(text("PRAGMA user_version=3"))
+            if version < 4:
+                columns=[row[1] for row in db.exec_driver_sql('PRAGMA table_info(files)')]
+                if 'workspace_id' not in columns:db.exec_driver_sql('ALTER TABLE files ADD COLUMN workspace_id VARCHAR')
+                metadata.create_all(db)
+                log_columns=[row[1] for row in db.exec_driver_sql('PRAGMA table_info(upload_logs)')]
+                if 'workspace_id' not in log_columns:db.exec_driver_sql('ALTER TABLE upload_logs ADD COLUMN workspace_id VARCHAR')
+                db.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_files_workspace_id ON files(workspace_id)')
+                db.execute(lease.insert().values(id=1,workspace_id=None))
+                db.execute(text('PRAGMA user_version=4'))
         self.finish_purges()
 
     def options(self):
@@ -133,11 +149,18 @@ class Store:
         with self.engine.connect() as db:
             return db.execute(select(files).where(files.c.id == file_id)).mappings().first()
 
-    def ingest(self, prepared, device, qr, extra, external_batch=None, batch_interval=30):
+    def ingest(self, prepared, device, qr, extra, external_batch=None, batch_interval=30,receipt_id=None,workspace_id=None):
         """All files in one request commit together. Originals are never re-encoded."""
         moved, records = [], []
         try:
             with self.lock, self.engine.begin() as db:
+                db.exec_driver_sql("BEGIN IMMEDIATE")
+                if receipt_id:
+                    previous_id=db.execute(select(receipts.c.file_id).where(receipts.c.id==receipt_id)).scalar()
+                    if previous_id:return [{"id":previous_id,"duplicate_of":None}]
+                if workspace_id:
+                    live=db.execute(select(workspaces.c.id).where(workspaces.c.id==workspace_id,workspaces.c.state=='open',workspaces.c.expires>time.time())).scalar()
+                    if not live:raise ValueError('Workspace ended')
                 now = time.time()
                 condition = [batches.c.device == device]
                 if external_batch:
@@ -168,9 +191,10 @@ class Store:
                     row = dict(id=file_id, name=clean_name(item["name"]), path=relative.as_posix(),
                         size=target.stat().st_size, mime=item["mime"], sha256=sha, uploaded_at=time.time(),
                         device=device, qr=qr, extra=extra, batch_id=batch_id, width=item["width"],
-                        height=item["height"], rotation=0, deleted_at=None)
+                        height=item["height"], rotation=0, deleted_at=None,workspace_id=workspace_id)
                     db.execute(files.insert().values(**row))
                     records.append({"id": file_id, "duplicate_of": duplicate})
+                if receipt_id:db.execute(receipts.insert().values(id=receipt_id,file_id=records[0]["id"]))
                 self.bump(db)
             return records
         except BaseException:
