@@ -49,7 +49,16 @@
 - [x] 部署/升级/回退/备份恢复/目标机签收文档，CI 配置（尚未远端执行）。
 - [x] 51 项本地自动化测试通过，含真实 HTTP、进程重启、备份恢复、损坏/越界拒绝、资源限额和事件循环响应。
 - [x] 更新依赖后：51 项后端测试、8 项桌面/手机浏览器测试、前端类型检查和生产构建通过；导出 PDF 经 Poppler 渲染复查；pip check 通过。
-- [ ] Docker 镜像构建与容器验收、J1900 压测、真实扫描仪/移动设备签收仍需目标环境；本轮没有宣称这些已完成。
+- [x] GitHub 托管 Ubuntu runner 已通过 Docker 镜像构建、隔离容器上传/PDF/ZIP、重启后持久化验收。
+- [ ] J1900 压测、真实扫描仪/移动设备签收仍需目标环境。
+
+## GitHub 与 Docker Hub 发布
+
+- [x] 创建公开源码仓库 frayscc/scanhub，排除数据、测试运行产物、备份与凭据。
+- [x] 发布 workflow：验证通过后由 GitHub runner 推送 frayscc/scanhub；PR 不使用发布凭据。
+- [x] Docker Hub 凭据仅配置在 Actions secret DOCKERHUB_TOKEN 中。
+- [x] 提供直接拉取镜像的 docker-compose.image.yml 和发布文档。
+- [ ] 首次镜像推送及匿名拉取校验，执行后更新。
 
 ## Phase 3：可选业务扩展，尚未开发
 

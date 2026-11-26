@@ -6,7 +6,7 @@
 
 当前核心版本 **0.3.0** 已增加上线收尾工具：可校验的离线备份恢复、存储就绪检查、独立验收环境和资源限制。部署/升级/回退及目标机签收步骤见 [上线与运维说明](docs/operations.md)。原 Phase 3 的业务扩展按需单独开发；正式交付仍需真实设备及服务器验收。
 
-本轮验证：51 项后端自动化测试、8 项桌面/手机浏览器测试通过，包含真实 HTTP、进程重启和备份恢复演练；前端构建与 PDF 渲染复查通过。Docker/CI 和 J1900 验收尚未在目标环境执行。
+本轮验证：51 项后端自动化测试、8 项桌面/手机浏览器测试通过，包含真实 HTTP、进程重启和备份恢复演练；前端构建与 PDF 渲染复查通过。GitHub 托管 Ubuntu runner 已通过 Docker 构建、容器上传/下载/PDF/ZIP 和重启后持久化验收；J1900 与真实扫描仪仍待目标环境验证。
 
 ## 当前功能
 
@@ -150,6 +150,6 @@ npx playwright test
 python scripts/simulate_scanner.py --confirm-test-target --url http://localhost:8687/api/debug/upload --count 20 --pages 2 --workers 2
 ```
 
-当前环境没有 Docker；容器构建/重启、Debian/J1900 性能及真实扫描仪协议仍待目标环境验证。自动化结果及剩余范围见 [ROADMAP.md](ROADMAP.md)。
+开发电脑没有 Docker，现已使用 GitHub 托管 runner 完成容器构建与重启验收；Debian/J1900 性能及真实扫描仪协议仍待目标环境验证。自动化结果及剩余范围见 [ROADMAP.md](ROADMAP.md)。
 
 Phase 2 本地验收：40 项后端测试及 8 项 Edge 桌面/手机视口测试通过，前端类型检查与生产构建通过；PDF 经 Poppler 渲染检查。测试覆盖 v1→v2 升级、PDF 页序/方向/A4/原 JPEG 数据一致、多页 TIFF、批次推断与手动整理、永久删除重试、默认永久保留及可选分阶段清理、启动维护、令牌摘要持久化。正式升级前先停止旧服务备份 data；v2 数据库不能直接交给旧版程序运行，应通过升级前备份回退。

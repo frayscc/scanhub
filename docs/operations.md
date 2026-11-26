@@ -94,4 +94,4 @@ docker compose -f docker-compose.acceptance.yml down
 
 本地验证：`python -m pytest -q`，前端 `npm ci`、`npm run build`、`npx playwright test`。已新增真实进程重启和离线备份恢复测试，不把这些结果等同于 Docker 或真实硬件验证。
 
-`requirements.lock` 固定本轮验证的运行依赖，`requirements.txt` 使用该约束；前端通过 package-lock 固定。更新依赖后应重新测试，包括 PDF 渲染。此次核对的 23 个运行依赖在 PyPI 版本元数据中未报告已知公告，npm audit 报告为 0；这只是检查时的数据，并不保证以后没有新问题。CI 配置包含测试、前端构建、Docker 构建及隔离容器重启验收；当前未在远端执行。
+`requirements.lock` 固定本轮验证的运行依赖，`requirements.txt` 使用该约束；前端通过 package-lock 固定。更新依赖后应重新测试，包括 PDF 渲染。此次核对的 23 个运行依赖在 PyPI 版本元数据中未报告已知公告，npm audit 报告为 0；这只是检查时的数据，并不保证以后没有新问题。GitHub 托管 Ubuntu runner 已执行并通过测试、前端构建、Docker 构建及隔离容器重启验收，不能将其视为 J1900/真实扫描仪签收。
