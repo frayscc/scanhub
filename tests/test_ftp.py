@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from ftplib import FTP, error_perm, error_temp
 import io
 import json
+import logging
 import time
 import uuid
 
@@ -132,3 +133,43 @@ def test_no_workspace_rejects_upload_and_new_guest_can_claim(server):
     assert client.post('/api/workspaces/start').status_code==200
     with connect(port) as ftp:ftp.storbinary('STOR next.jpg',io.BytesIO(image()))
     assert wait_for(client,1)[0]['name']=='next.jpg'
+
+
+@pytest.mark.parametrize('passive',[True,False])
+def test_scanner_directory_and_both_data_modes(server,passive):
+    app,client,port,csrf=server
+    with connect(port) as ftp:
+        ftp.trust_server_pasv_ipv4_address=True
+        ftp.set_pasv(passive)
+        ftp.cwd('/')
+        ftp.mkd('scans')
+        ftp.cwd('scans')
+        ftp.storbinary('STOR page.jpg',io.BytesIO(image()))
+    assert wait_for(client,1)[0]['name']=='page.jpg'
+
+
+def test_protocol_logs_explain_rejection_without_credentials_or_paths(server,caplog):
+    app,client,port,csrf=server
+    caplog.set_level(logging.INFO,logger='uvicorn.error')
+    with connect(port) as ftp:
+        with pytest.raises(error_perm):ftp.cwd('private-document-folder')
+        ftp.storbinary('STOR private-document.jpg',io.BytesIO(image()))
+    wait_for(client,1)
+    client.post('/api/workspaces/end')
+    with connect(port) as ftp:
+        with pytest.raises(error_temp):ftp.storbinary('STOR rejected-document.jpg',io.BytesIO(image()))
+    assert 'cmd=CWD code=550' in caplog.text
+    assert 'cmd=STOR code=450' in caplog.text
+    assert 'cmd=PASV code=227' in caplog.text
+    for secret in ('ftp-test-password','private-document','rejected-document',csrf):assert secret not in caplog.text
+
+
+def test_readonly_probe_uses_advertised_passive_address(server,monkeypatch):
+    from scanhub.ftp_probe import probe
+    app,client,port,csrf=server
+    monkeypatch.setenv('FTP_PORT',str(port))
+    result=probe()
+    assert result['ok'] and result['passive_host']=='127.0.0.1'
+    assert result['passive_connection']=='ok'
+    assert client.get('/api/files').json()['total']==0
+    assert 'ftp-test-password' not in json.dumps(result)

@@ -2,7 +2,7 @@
 
 [GitHub](https://github.com/frayscc/scanhub) · [Docker Hub](https://hub.docker.com/r/frayscc/scanhub)
 
-**0.4.0：免登录的临时扫描工作台，FTP 接收。** 单个 Python 服务集成网页与 FTP，SQLite 存储，无需外部数据库。
+**0.4.1：免登录的临时扫描工作台，FTP 接收。** 单个 Python 服务集成网页与 FTP，SQLite 存储，无需外部数据库。
 
 ## 使用方式
 

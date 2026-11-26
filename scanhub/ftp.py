@@ -121,7 +121,16 @@ class FTPReceiver:
                 pass  # Never log original names or content.
 
             def log_cmd(self, cmd, arg, respcode, respstr):
-                pass
+                # Log protocol progress, never arguments (passwords, names, paths).
+                command=cmd if cmd in self.proto_cmds else 'UNKNOWN'
+                log.info('FTP command peer=%s:%s cmd=%s code=%s',self.remote_ip,self.remote_port,command,respcode)
+
+            def respond(self, resp, logfun=None):
+                # Data-channel errors may arrive asynchronously after PASV/PORT.
+                if resp[:3] in ('421','425','426'):
+                    log.warning('FTP connection peer=%s:%s code=%s',self.remote_ip,self.remote_port,resp[:3])
+                if logfun is None:return super().respond(resp)
+                return super().respond(resp,logfun)
 
         Handler.masquerade_address = os.getenv("FTP_PUBLIC_HOST") or None
         minimum,maximum=int(os.getenv("FTP_PASSIVE_MIN","21000")),int(os.getenv("FTP_PASSIVE_MAX","21010"))
@@ -134,6 +143,7 @@ class FTPReceiver:
         self.thread=threading.Thread(target=self.server.serve_forever,kwargs={"timeout":.2,"handle_exit":False},daemon=True)
         self.thread.start()
         log.info("FTP scanner reception started on port %s",self.server.socket.getsockname()[1])
+        log.info('FTP data configuration public_host=%s passive_ports=%d-%d',Handler.masquerade_address or 'auto',minimum,maximum)
 
     def close(self):
         if self.server:
