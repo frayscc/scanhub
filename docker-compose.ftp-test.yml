@@ -1,0 +1,17 @@
+# Standalone FTP connectivity test, not a ScanHub import adapter.
+services:
+  scanner-ftp:
+    image: delfer/alpine-ftp-server:latest
+    container_name: scanhub-ftp-test
+    ports:
+      - "21:21"
+      - "21000-21010:21000-21010"
+    environment:
+      USERS: "scanner|${SCANNER_FTP_PASSWORD:?Set SCANNER_FTP_PASSWORD in .env}|/ftp/scanner|10001|10001"
+      ADDRESS: "10.0.0.49"
+      MIN_PORT: "21000"
+      MAX_PORT: "21010"
+      CONF_chroot_local_user: "YES"
+      CONF_allow_writeable_chroot: "YES"
+    volumes:
+      - ./ftp-test:/ftp/scanner

@@ -12,6 +12,7 @@ __pycache__
 .pytest_cache
 data
 scanner-test
+ftp-test
 tests
 frontend/node_modules
 frontend/dist
